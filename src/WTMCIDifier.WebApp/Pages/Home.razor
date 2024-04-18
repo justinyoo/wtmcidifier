@@ -1,0 +1,93 @@
+﻿@page "/"
+@using System.Globalization
+
+<PageTitle><code>WT.mc_id</code>ifier</PageTitle>
+
+<FluentCard Height="150px">
+    <FluentLabel Typo="Typography.H1">Add your <code>WT.mc_id</code> tracking code to given URL</FluentLabel>
+</FluentCard>
+
+<FluentLayout Style="margin-top: 50px;">
+    <FluentGrid Justify="JustifyContent.FlexStart" Style="padding: 4px;">
+        <FluentGridItem xs="12">
+            <FluentTextField @bind-Value="url" Placeholder="Enter URL" TextFieldType="TextFieldType.Url" Required="true" style="width: 100%;">
+                <FluentIcon Value="@(new Icons.Regular.Size16.Globe())" Slot="start" Color="Color.Neutral" />
+            </FluentTextField>
+        </FluentGridItem>
+        <FluentGridItem xs="6">
+            <FluentTextField @bind-Value="trackingCode" Placeholder="Enter your tracking code" Required="true" style="width: 100%;">
+                <FluentIcon Value="@(new Icons.Regular.Size16.Question())" Slot="start" Color="Color.Neutral" />
+            </FluentTextField>
+        </FluentGridItem>
+        <FluentGridItem xs="1">
+            <FluentCheckbox @bind-Value="@toKoKr" Label="To ko-kr" />
+        </FluentGridItem>
+        <FluentGridItem xs="2">
+            <FluentButton Appearance="Appearance.Accent" OnClick="OnGenerate_Click" style="width: 100%;">
+                <code style="color: orange;">WT.mc_id</code>ify!
+            </FluentButton>
+        </FluentGridItem>
+        <FluentGridItem xs="2">
+            <FluentButton Appearance="Appearance.Neutral" OnClick="OnReset_Click" style="width: 100%;">
+                Reset
+            </FluentButton>
+        </FluentGridItem>
+        <FluentGridItem xs="12">
+            <FluentTextField @bind-Value="wtmcidfied" Placeholder="Result" ReadOnly="true" TextFieldType="TextFieldType.Url" style="width: 100%;">
+                <FluentIcon Value="@(new Icons.Regular.Size16.Globe())" Slot="start" Color="Color.Neutral" />
+            </FluentTextField>
+        </FluentGridItem>
+    </FluentGrid>
+</FluentLayout>
+
+@code {
+    private string? url;
+    private string? trackingCode;
+    private bool toKoKr = true;
+    private string? wtmcidfied;
+
+    protected async Task OnGenerate_Click()
+    {
+        if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(trackingCode))
+        {
+            return;
+        }
+
+        if (url.Contains("microsoft.com") == false)
+        {
+            wtmcidfied = url;
+            return;
+        }
+
+        var parts = url.Trim().Split(new[] { "#" }, StringSplitOptions.RemoveEmptyEntries);
+        var urlWithoutFragment = parts[0];
+        var fragment = parts.Length > 1 ? $"#{parts[1]}" : string.Empty;
+        var cleansedTrackingCode = trackingCode.Trim().ToLowerInvariant().Replace("?", "").Replace("/", "").Replace("wt.mc_id=", "");
+
+        var locales = CultureInfo.GetCultures(CultureTypes.AllCultures).Select(p => p.Name.ToLowerInvariant());
+        foreach (var locale in locales)
+        {
+            if (urlWithoutFragment.Contains($"microsoft.com/{locale}/") == true)
+            {
+                wtmcidfied = urlWithoutFragment.Replace($"microsoft.com/{locale}/",
+                                                        toKoKr == true ? "microsoft.com/ko-kr/" : "microsoft.com/");
+                break;
+            }
+        }
+
+        wtmcidfied += urlWithoutFragment.Contains("?") == true ? "&" : "?";
+        wtmcidfied += $"WT.mc_id={cleansedTrackingCode}{fragment}";
+
+        await Task.CompletedTask;
+    }
+
+    protected async Task OnReset_Click()
+    {
+        url = null;
+        trackingCode = null;
+        toKoKr = true;
+        wtmcidfied = null;
+
+        await Task.CompletedTask;
+    }
+}
