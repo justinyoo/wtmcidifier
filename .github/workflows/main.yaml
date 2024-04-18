@@ -31,6 +31,15 @@ jobs:
       with:
         dotnet-version: '8.x'
 
+    - name: Set basepath on index.html
+      shell: pwsh
+      run: |
+        $filepath = "./src/WTMCIDifier.WebApp/wwwroot/index.html"
+        $repository = "${{ github.repository }}" -replace "${{ github.repository_owner }}", ""
+
+        $html = Get-Content -Path $filepath
+        $html -replace "<base href=`"/`" />", "<base href=`"$repository/`" />" | Out-File -Path $filepath -Force
+
     - name: Restore NuGet packages
       run: dotnet restore
 
